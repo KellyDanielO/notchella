@@ -1,0 +1,26 @@
+# Build output
+build/
+DerivedData/
+*.xcarchive
+*.dmg
+
+# Per-user Xcode state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Signing and notarization secrets: these must never be committed
+*.p8
+*.p12
+*.cer
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+
+# Local tool config
+.claude/
+
+# macOS
+.DS_Store
