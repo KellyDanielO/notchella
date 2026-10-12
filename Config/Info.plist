@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged into the generated Info.plist. Sparkle reads these to find and verify updates. -->
+	<key>SUFeedURL</key>
+	<string>https://notchella.kellydanielo.com/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>C14n+4litD5W8V20xLwjQqKsHF03w0pN5zQ1o44fsZ0=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+</dict>
+</plist>

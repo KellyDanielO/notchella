@@ -15,6 +15,7 @@ final class AppModel {
     let xcode: XcodeBuildMonitor
     let keepAwake = KeepAwakeManager()
     let devServers = DevServerScanner()
+    let updates = UpdateManager()
     let notch: NotchViewModel
 
     private var keepAwakeTimer: Timer?

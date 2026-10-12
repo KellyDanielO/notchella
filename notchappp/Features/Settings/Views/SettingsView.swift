@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(HUDManager.self) private var hud
     @Environment(AlertManager.self) private var alerts
     @Environment(AgentMonitor.self) private var agents
+    @Environment(UpdateManager.self) private var updates
     @State private var hookError: String?
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
@@ -153,6 +154,23 @@ struct SettingsView: View {
                 Text("Accessibility powers the volume & brightness keys and reading notification banners.")
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                @Bindable var updates = updates
+                Toggle("Check for updates automatically", isOn: $updates.automaticallyChecks)
+                LabeledContent("Updates") {
+                    Button("Check Now", action: updates.checkForUpdates)
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                if let lastChecked = updates.lastChecked {
+                    Text("Last checked \(lastChecked.formatted(.relative(presentation: .named))).")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            AboutSection()
 
             Section {
                 Button("Quit Notch", role: .destructive) { NSApp.terminate(nil) }

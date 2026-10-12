@@ -32,12 +32,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func checkForUpdates() {
+        model.updates.checkForUpdates()
+    }
+
     func showSettings() {
         model.notch.close()
 
         if settingsWindow == nil {
             let root = SettingsView()
                 .environment(model.settings)
+                .environment(model.updates)
                 .environment(model.calendar)
                 .environment(model.hud)
                 .environment(model.alerts)
