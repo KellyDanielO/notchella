@@ -12,7 +12,8 @@
 <p align="center">
   <a href="https://notchella.kellydanielo.com"><b>Download</b></a> ·
   <a href="https://notchella.kellydanielo.com">Website</a> ·
-  <a href="#building-from-source">Build from source</a>
+  <a href="#building-from-source">Build from source</a> ·
+  <a href="LICENSE">MIT License</a>
 </p>
 
 ---
@@ -110,6 +111,10 @@ It needs, on the maintainer's machine:
 ## Contributing
 
 Issues and pull requests are welcome. For anything bigger than a small fix, open an issue first so we can agree on the approach.
+
+## License
+
+Notchella is released under the [MIT License](LICENSE). The name and app icon identify the official builds, so please use your own for a published fork.
 
 ## Author
 
