@@ -116,7 +116,8 @@ echo "▸ Signing and writing appcast…"
 
 # The site's Download button always points at the latest build.
 cp "$DMG" "$WEB/public/downloads/Notchella.dmg"
-SIZE_MB=$(du -k "$DMG" | awk '{printf "%.1f", $1 / 1024}')
+# The file's byte size: `du` reports disk blocks, which can overstate it.
+SIZE_MB=$(stat -f%z "$DMG" | awk '{printf "%.1f", $1 / 1048576}')
 cat > "$WEB/app/release.json" <<JSON
 { "version": "$VERSION", "build": $BUILD_NUMBER, "sizeMB": "$SIZE_MB" }
 JSON
