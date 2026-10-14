@@ -5,7 +5,7 @@ struct DevView: View {
     var body: some View {
         HStack(spacing: 0) {
             AgentsPanel()
-                .frame(width: 300)
+                .frame(width: 262)
                 .padding(.trailing, 16)
                 .staggeredAppear(0)
 

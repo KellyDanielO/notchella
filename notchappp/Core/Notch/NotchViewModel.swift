@@ -46,14 +46,21 @@ final class NotchViewModel {
         case agent
         case build
         case charged
+        case headphones
+        case download
+        case breakNudge
+        case affirmation
+        /// Nothing going on, but an idle style (eyes) is on.
+        case idle
     }
 
     // MARK: Layout constants
 
     static let windowSize = CGSize(width: 780, height: 300)
-    static let openContentSize = CGSize(width: 660, height: 172)
+    static let openContentSize = CGSize(width: 600, height: 172)
     static let lyricLineHeight: CGFloat = 22
     static let alertHeight: CGFloat = 52
+    static let affirmationHeight: CGFloat = 44
     private static let alertMinWidth: CGFloat = 420
 
     private static let closedTopRadius: CGFloat = 6
@@ -71,6 +78,8 @@ final class NotchViewModel {
     private(set) var notchSize = CGSize(width: 185, height: 32)
     private(set) var hasPhysicalNotch = true
     private(set) var screenFrame: CGRect = .zero
+    /// The cursor, tracked only while the idle eyes are showing (they follow it).
+    private(set) var mouseLocation: CGPoint = .zero
 
     @ObservationIgnored var openSettings: () -> Void = {}
     @ObservationIgnored var didClose: () -> Void = {}
@@ -87,11 +96,15 @@ final class NotchViewModel {
     @ObservationIgnored private let alerts: AlertManager
     @ObservationIgnored private let agents: AgentMonitor
     @ObservationIgnored private let xcode: XcodeBuildMonitor
+    @ObservationIgnored private let headphones: HeadphonesManager
+    @ObservationIgnored private let downloads: DownloadMonitor
+    @ObservationIgnored private let idle: IdleManager
     @ObservationIgnored private var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var closeTask: Task<Void, Never>?
 
     init(settings: AppSettings, music: MusicManager, battery: BatteryManager, lyrics: LyricsManager, hud: HUDManager, alerts: AlertManager,
-         agents: AgentMonitor, xcode: XcodeBuildMonitor) {
+         agents: AgentMonitor, xcode: XcodeBuildMonitor, headphones: HeadphonesManager,
+         downloads: DownloadMonitor, idle: IdleManager) {
         self.settings = settings
         self.music = music
         self.battery = battery
@@ -100,6 +113,9 @@ final class NotchViewModel {
         self.alerts = alerts
         self.agents = agents
         self.xcode = xcode
+        self.headphones = headphones
+        self.downloads = downloads
+        self.idle = idle
     }
 
     // MARK: Geometry
@@ -125,11 +141,16 @@ final class NotchViewModel {
         if alerts.currentAlert != nil { return .alert }
         if xcode.freshResult != nil { return .build }
         if agents.justFinished != nil || agents.sessionNeedingInput != nil { return .agent }
+        if agents.breakNudgeMinutes != nil { return .breakNudge }
+        if headphones.isShowingActivity { return .headphones }
         if battery.isShowingChargedActivity { return .charged }
         if settings.showChargingActivity && battery.isShowingChargingActivity { return .charging }
+        if downloads.isShowingActivity { return .download }
+        if idle.ambientAffirmation != nil && status == .closed { return .affirmation }
         if xcode.isBuilding { return .build }
         if settings.showMusicActivity && music.track != nil && music.isPlaying { return .music }
         if agents.isAnyWorking { return .agent }
+        if settings.idleEyes { return .idle }
         return .none
     }
 
@@ -143,6 +164,11 @@ final class NotchViewModel {
         case .agent: 84
         case .build: 84
         case .charged: 96
+        case .headphones: (headphones.device?.hasSeparateBuds ?? false) ? 96 : 72
+        case .download: 64
+        case .breakNudge: 96
+        case .affirmation: 0
+        case .idle: notchSize.height - 6
         }
     }
 
@@ -152,7 +178,7 @@ final class NotchViewModel {
 
     var topRadius: CGFloat { status == .open ? Self.openTopRadius : Self.closedTopRadius }
     var bottomRadius: CGFloat {
-        if status == .open || activity == .alert { return 24 }
+        if status == .open || activity == .alert || activity == .affirmation { return 24 }
         return showsLyricLine ? 14 : 10
     }
 
@@ -164,6 +190,9 @@ final class NotchViewModel {
         if activity == .alert {
             size.width = max(size.width, Self.alertMinWidth)
             size.height += Self.alertHeight
+        } else if activity == .affirmation {
+            size.width = max(size.width, Self.alertMinWidth)
+            size.height += Self.affirmationHeight
         }
         if isHovering {
             size.width += 14
@@ -228,6 +257,9 @@ final class NotchViewModel {
     /// Called for every mouse event and on a slow timer by the window controller.
     func handleMouse(at point: CGPoint, isDraggingFiles: Bool) {
         let inside = hitRect.contains(point)
+        if activity == .idle && status == .closed && point != mouseLocation {
+            mouseLocation = point
+        }
 
         switch status {
         case .closed:

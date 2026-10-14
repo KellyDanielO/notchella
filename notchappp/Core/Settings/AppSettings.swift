@@ -23,6 +23,14 @@ final class AppSettings {
         static let fullChargeTarget = "fullChargeTarget"
         static let xcodeBuildStatusEnabled = "xcodeBuildStatusEnabled"
         static let buildFailureSound = "buildFailureSound"
+        static let idleBreathingGlow = "idleBreathingGlow"
+        static let idleEyes = "idleEyes"
+        static let ambientAffirmations = "ambientAffirmations"
+        static let ambientAffirmationMinutes = "ambientAffirmationMinutes"
+        static let headphonesActivity = "headphonesActivity"
+        static let downloadsActivity = "downloadsActivity"
+        static let agentBreakNudge = "agentBreakNudge"
+        static let agentBreakMinutes = "agentBreakMinutes"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -45,6 +53,14 @@ final class AppSettings {
     var fullChargeTarget: Int { didSet { defaults.set(fullChargeTarget, forKey: Key.fullChargeTarget) } }
     var xcodeBuildStatusEnabled: Bool { didSet { defaults.set(xcodeBuildStatusEnabled, forKey: Key.xcodeBuildStatusEnabled) } }
     var buildFailureSound: Bool { didSet { defaults.set(buildFailureSound, forKey: Key.buildFailureSound) } }
+    var idleBreathingGlow: Bool { didSet { defaults.set(idleBreathingGlow, forKey: Key.idleBreathingGlow) } }
+    var idleEyes: Bool { didSet { defaults.set(idleEyes, forKey: Key.idleEyes) } }
+    var ambientAffirmations: Bool { didSet { defaults.set(ambientAffirmations, forKey: Key.ambientAffirmations) } }
+    var ambientAffirmationMinutes: Int { didSet { defaults.set(ambientAffirmationMinutes, forKey: Key.ambientAffirmationMinutes) } }
+    var headphonesActivity: Bool { didSet { defaults.set(headphonesActivity, forKey: Key.headphonesActivity) } }
+    var downloadsActivity: Bool { didSet { defaults.set(downloadsActivity, forKey: Key.downloadsActivity) } }
+    var agentBreakNudge: Bool { didSet { defaults.set(agentBreakNudge, forKey: Key.agentBreakNudge) } }
+    var agentBreakMinutes: Int { didSet { defaults.set(agentBreakMinutes, forKey: Key.agentBreakMinutes) } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -67,6 +83,14 @@ final class AppSettings {
             Key.fullChargeTarget: 100,
             Key.xcodeBuildStatusEnabled: true,
             Key.buildFailureSound: true,
+            Key.idleBreathingGlow: false,
+            Key.idleEyes: true,
+            Key.ambientAffirmations: false,
+            Key.ambientAffirmationMinutes: 60,
+            Key.headphonesActivity: true,
+            Key.downloadsActivity: true,
+            Key.agentBreakNudge: true,
+            Key.agentBreakMinutes: 25,
         ])
         openOnHover = defaults.bool(forKey: Key.openOnHover)
         hoverDelay = defaults.double(forKey: Key.hoverDelay)
@@ -86,5 +110,13 @@ final class AppSettings {
         fullChargeTarget = defaults.integer(forKey: Key.fullChargeTarget)
         xcodeBuildStatusEnabled = defaults.bool(forKey: Key.xcodeBuildStatusEnabled)
         buildFailureSound = defaults.bool(forKey: Key.buildFailureSound)
+        idleBreathingGlow = defaults.bool(forKey: Key.idleBreathingGlow)
+        idleEyes = defaults.bool(forKey: Key.idleEyes)
+        ambientAffirmations = defaults.bool(forKey: Key.ambientAffirmations)
+        ambientAffirmationMinutes = defaults.integer(forKey: Key.ambientAffirmationMinutes)
+        headphonesActivity = defaults.bool(forKey: Key.headphonesActivity)
+        downloadsActivity = defaults.bool(forKey: Key.downloadsActivity)
+        agentBreakNudge = defaults.bool(forKey: Key.agentBreakNudge)
+        agentBreakMinutes = defaults.integer(forKey: Key.agentBreakMinutes)
     }
 }

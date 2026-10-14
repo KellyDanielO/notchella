@@ -94,6 +94,7 @@ private struct NotchHeaderView: View {
                                 .help("Keeping your Mac awake")
                                 .transition(.scale.combined(with: .opacity))
                         }
+                        HeadphonesHeaderBadge()
                         if battery.hasBattery {
                             BatteryRing(size: 22)
                         }
@@ -163,7 +164,7 @@ private struct HomeView: View {
     var body: some View {
         HStack(spacing: 0) {
             MusicPlayerView(namespace: namespace)
-                .frame(width: 384)
+                .frame(width: 336)
                 .padding(.trailing, 16)
                 .staggeredAppear(0)
 

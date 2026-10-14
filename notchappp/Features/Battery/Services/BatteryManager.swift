@@ -15,6 +15,7 @@ final class BatteryManager {
     private(set) var isShowingChargedActivity = false
 
     @ObservationIgnored private let settings: AppSettings
+    @ObservationIgnored var onPluggedIn: () -> Void = {}
 
     @ObservationIgnored private var notifyToken: Int32 = NOTIFY_TOKEN_INVALID
     @ObservationIgnored private var activityTask: Task<Void, Never>?
@@ -52,6 +53,7 @@ final class BatteryManager {
             isCharging = description[kIOPSIsChargingKey] as? Bool ?? false
 
             if announceChanges && pluggedIn && !isPluggedIn {
+                onPluggedIn()
                 showChargingActivity()
             }
             isPluggedIn = pluggedIn

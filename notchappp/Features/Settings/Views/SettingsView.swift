@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(HUDManager.self) private var hud
     @Environment(AlertManager.self) private var alerts
     @Environment(AgentMonitor.self) private var agents
+    @Environment(IdleManager.self) private var idle
     @Environment(UpdateManager.self) private var updates
     @State private var hookError: String?
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -43,9 +44,33 @@ struct SettingsView: View {
                 Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
             }
 
+            Section {
+                Toggle("Breathing glow", isOn: $settings.idleBreathingGlow)
+                Toggle("Eyes", isOn: $settings.idleEyes)
+                Toggle("Ambient affirmations", isOn: $settings.ambientAffirmations)
+                if settings.ambientAffirmations {
+                    Picker("Show one every", selection: $settings.ambientAffirmationMinutes) {
+                        Text("15 minutes").tag(15)
+                        Text("30 minutes").tag(30)
+                        Text("Hour").tag(60)
+                        Text("2 hours").tag(120)
+                    }
+                    LabeledContent("Preview") {
+                        Button("Show one now", action: idle.showAmbientAffirmationNow)
+                    }
+                }
+            } header: {
+                Text("When idle")
+            } footer: {
+                Text("Mix and match. The glow pulses softly in the last song's colour; the eyes follow your cursor, blink, get sleepy after 11pm and jump when you plug in; affirmations come from your Reflect tab.")
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Live activities") {
                 Toggle("Now playing", isOn: $settings.showMusicActivity)
                 Toggle("Charging", isOn: $settings.showChargingActivity)
+                Toggle("Headphones & earbuds", isOn: $settings.headphonesActivity)
+                Toggle("Downloads", isOn: $settings.downloadsActivity)
                 Toggle("Tell me when the battery is charged", isOn: $settings.fullChargeAlert)
                 if settings.fullChargeAlert {
                     Picker("Charged at", selection: $settings.fullChargeTarget) {
@@ -72,6 +97,10 @@ struct SettingsView: View {
                 Toggle("Keep the display on too", isOn: $settings.keepDisplayAwake)
                     .disabled(settings.keepAwakeMode == .off)
                 Toggle("Alert me when an agent finishes", isOn: $settings.agentFinishAlerts)
+                Toggle("Nudge me to take breaks", isOn: $settings.agentBreakNudge)
+                if settings.agentBreakNudge {
+                    Stepper("After \(settings.agentBreakMinutes) minutes of agent work", value: $settings.agentBreakMinutes, in: 10...120, step: 5)
+                }
                 hookRow(.claude)
                 hookRow(.codex)
                 if let hookError {

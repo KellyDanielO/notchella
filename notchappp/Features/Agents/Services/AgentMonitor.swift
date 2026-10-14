@@ -13,6 +13,8 @@ final class AgentMonitor {
     private(set) var sessions: [AgentSession] = []
     /// A session that just finished, shown briefly in the notch.
     private(set) var justFinished: AgentSession?
+    /// Minutes of continuous agent work, set while the "take a break" nudge is showing.
+    private(set) var breakNudgeMinutes: Int?
     private(set) var hooksInstalled: [AgentKind: Bool] = [:]
 
     @ObservationIgnored private let settings: AppSettings
@@ -22,6 +24,13 @@ final class AgentMonitor {
     @ObservationIgnored private var scanTimer: Timer?
     @ObservationIgnored private var finishedTask: Task<Void, Never>?
     @ObservationIgnored private var processActivity: [Int32: Date] = [:]
+    @ObservationIgnored private var workStretchStart: Date?
+    @ObservationIgnored private var lastWorkingDate: Date?
+    @ObservationIgnored private var nudgesThisStretch = 0
+    @ObservationIgnored private var breakNudgeTask: Task<Void, Never>?
+
+    /// A gap without any agent working longer than this ends a work stretch.
+    private static let stretchBreakGap: TimeInterval = 5 * 60
 
     /// CPU use (percent of a core) above which an agent's process tree counts as busy.
     private static let busyCPUThreshold = 3.0
@@ -56,6 +65,39 @@ final class AgentMonitor {
             .claude: AgentHookInstaller.isClaudeInstalled,
             .codex: AgentHookInstaller.isCodexInstalled,
         ]
+    }
+
+    func dismissBreakNudge() {
+        breakNudgeTask?.cancel()
+        withAnimation(.notchActivity) { breakNudgeMinutes = nil }
+    }
+
+    /// Tracks continuous stretches of agent work (short pauses between prompts don't count as
+    /// breaks) and nudges you to take one every `agentBreakMinutes`.
+    private func checkBreakNudge() {
+        let now = Date()
+        if isAnyWorking {
+            if workStretchStart == nil || now.timeIntervalSince(lastWorkingDate ?? now) > Self.stretchBreakGap {
+                workStretchStart = now
+                nudgesThisStretch = 0
+            }
+            lastWorkingDate = now
+        }
+        guard settings.agentBreakNudge, let start = workStretchStart, isAnyWorking else { return }
+
+        let interval = TimeInterval(max(settings.agentBreakMinutes, 5) * 60)
+        let due = Int(now.timeIntervalSince(start) / interval)
+        guard due > nudgesThisStretch else { return }
+        nudgesThisStretch = due
+
+        if settings.alertSoundEnabled { NSSound(named: "Blow")?.play() }
+        breakNudgeTask?.cancel()
+        withAnimation(.notchActivity) { breakNudgeMinutes = Int(now.timeIntervalSince(start) / 60) }
+        breakNudgeTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(12))
+            guard !Task.isCancelled else { return }
+            self?.dismissBreakNudge()
+        }
     }
 
     func dismissFinished() {
@@ -137,6 +179,7 @@ final class AgentMonitor {
     // MARK: Process heuristic
 
     private func scanProcesses() {
+        checkBreakNudge()
         expireStaleSessions()
         let scanner = scanner
         scanQueue.async { [weak self] in

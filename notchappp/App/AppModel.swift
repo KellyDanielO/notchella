@@ -13,6 +13,9 @@ final class AppModel {
     let reflect: ReflectStore
     let agents: AgentMonitor
     let xcode: XcodeBuildMonitor
+    let headphones: HeadphonesManager
+    let downloads: DownloadMonitor
+    let idle: IdleManager
     let keepAwake = KeepAwakeManager()
     let devServers = DevServerScanner()
     let updates = UpdateManager()
@@ -27,6 +30,9 @@ final class AppModel {
         reflect = ReflectStore()
         agents = AgentMonitor(settings: settings)
         xcode = XcodeBuildMonitor(settings: settings)
+        headphones = HeadphonesManager(settings: settings)
+        downloads = DownloadMonitor(settings: settings)
+        idle = IdleManager(settings: settings, reflect: reflect)
         notch = NotchViewModel(
             settings: settings,
             music: music,
@@ -35,8 +41,18 @@ final class AppModel {
             hud: hud,
             alerts: alerts,
             agents: agents,
-            xcode: xcode
+            xcode: xcode,
+            headphones: headphones,
+            downloads: downloads,
+            idle: idle
         )
+
+        // Ambient affirmations only drift in when they won't cover something more useful.
+        idle.canShowAmbient = { [weak self] in
+            guard let notch = self?.notch else { return false }
+            return notch.status == .closed && [.none, .idle, .music].contains(notch.activity)
+        }
+        battery.onPluggedIn = { [weak self] in self?.idle.surprise() }
 
         music.onTrackChange = { [weak self] track in
             guard let self, settings.lyricsEnabled else { return }
@@ -51,6 +67,9 @@ final class AppModel {
         alerts.start()
         agents.start()
         xcode.start()
+        headphones.start()
+        downloads.start()
+        idle.start()
 
         updateKeepAwake()
         keepAwakeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in

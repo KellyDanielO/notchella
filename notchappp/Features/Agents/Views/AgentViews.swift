@@ -190,3 +190,27 @@ struct AgentClosedTrailing: View {
         .lineLimit(1)
     }
 }
+
+/// Closed-notch nudge after a long stretch of agent work.
+struct BreakNudgeLeading: View {
+    var body: some View {
+        Image(systemName: "cup.and.saucer.fill")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.orange)
+            .symbolEffect(.bounce, options: .nonRepeating)
+    }
+}
+
+struct BreakNudgeTrailing: View {
+    @Environment(AgentMonitor.self) private var agents
+
+    var body: some View {
+        if let minutes = agents.breakNudgeMinutes {
+            Text("\(minutes)m · break?")
+                .font(.system(size: 11.5, weight: .bold).monospacedDigit())
+                .foregroundStyle(.orange)
+                .lineLimit(1)
+                .help("Your agents have been working for \(minutes) minutes. Stretch, drink some water.")
+        }
+    }
+}

@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 .environment(model.hud)
                 .environment(model.alerts)
                 .environment(model.agents)
+                .environment(model.idle)
             let window = NSWindow(contentViewController: NSHostingController(rootView: root))
             window.title = "Notch Settings"
             window.styleMask = [.titled, .closable, .resizable]

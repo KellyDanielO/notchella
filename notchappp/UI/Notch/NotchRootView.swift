@@ -4,6 +4,8 @@ import SwiftUI
 struct NotchRootView: View {
     @Environment(NotchViewModel.self) private var notch
     @Environment(ShelfManager.self) private var shelf
+    @Environment(MusicManager.self) private var music
+    @Environment(AppSettings.self) private var settings
     @Namespace private var namespace
 
     var body: some View {
@@ -35,6 +37,11 @@ struct NotchRootView: View {
         .frame(width: size.width, height: size.height, alignment: .top)
         .background(.black)
         .clipShape(shape)
+        .modifier(BreathingGlow(
+            isActive: settings.idleBreathingGlow && !isOpen && (notch.activity == .none || notch.activity == .idle),
+            tint: music.artwork == nil ? .white : music.accentColor,
+            shape: shape
+        ))
         .contentShape(shape)
         .shadow(color: .black.opacity(isOpen ? 0.6 : 0), radius: 18, y: 8)
         .dropDestination(for: URL.self) { urls, _ in

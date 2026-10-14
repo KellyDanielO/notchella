@@ -13,7 +13,7 @@ struct ReflectView: View {
     var body: some View {
         HStack(spacing: 12) {
             AffirmationCard()
-                .frame(width: 370)
+                .frame(width: 320)
                 .staggeredAppear(0)
 
             VStack(spacing: 8) {
