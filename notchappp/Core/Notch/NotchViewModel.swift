@@ -37,7 +37,7 @@ final class NotchViewModel {
     }
 
     /// Compact content shown beside the physical notch while it's closed.
-    enum Activity: Equatable {
+    nonisolated enum Activity: Hashable, Sendable {
         case none
         case music
         case charging
@@ -62,6 +62,10 @@ final class NotchViewModel {
     static let alertHeight: CGFloat = 52
     static let affirmationHeight: CGFloat = 44
     private static let alertMinWidth: CGFloat = 420
+    /// The space between the ink bar and the glass cards, and between the cards themselves.
+    static let glassGap: CGFloat = 10
+    /// The space between the closed notch and the circles beside it, and between circles.
+    static let satelliteGap: CGFloat = 6
 
     private static let closedTopRadius: CGFloat = 6
     private static let openTopRadius: CGFloat = 19
@@ -154,6 +158,38 @@ final class NotchViewModel {
         return .none
     }
 
+    /// Activities that keep running for a while, in the same priority order `activity` uses.
+    private var ongoingActivities: [Activity] {
+        var ongoing: [Activity] = []
+        if agents.sessionNeedingInput != nil { ongoing.append(.agent) }
+        if settings.downloadsActivity && downloads.fraction != nil { ongoing.append(.download) }
+        if xcode.isBuilding { ongoing.append(.build) }
+        if settings.showMusicActivity && music.track != nil && music.isPlaying { ongoing.append(.music) }
+        if agents.sessionNeedingInput == nil && agents.isAnyWorking { ongoing.append(.agent) }
+        return ongoing
+    }
+
+    /// Small circles beside the closed notch, in the glass layout only, like the Dynamic Island's
+    /// second activity: whatever is running besides the activity holding the wings.
+    var closedBeads: [Activity] {
+        guard usesGlassLayout, status == .closed else { return [] }
+        let ongoing = ongoingActivities
+        if activity == .alert || activity == .affirmation { return [] }
+
+        // A brief activity (volume, a finished build…) borrows the wings from the top ongoing one,
+        // which takes them back afterwards. Leave it out so it doesn't flash up as a bead.
+        let displacedCount = ongoing.contains(activity) ? 0 : 1
+        return Array(ongoing.filter { $0 != activity }.dropFirst(displacedCount).prefix(2))
+    }
+
+    /// A circle as tall as the notch, less a little breathing room.
+    var satelliteDiameter: CGFloat { notchSize.height - 4 }
+
+    /// How far the circles reach past the notch's right edge.
+    private var satellitesWidth: CGFloat {
+        CGFloat(closedBeads.count) * (Self.satelliteGap + satelliteDiameter)
+    }
+
     var wingWidth: CGFloat {
         switch activity {
         case .none: 0
@@ -176,8 +212,18 @@ final class NotchViewModel {
         activity == .music && settings.lyricsEnabled && settings.lyricsUnderNotch && lyrics.hasSyncedLyrics
     }
 
+    /// The liquid glass layout: only the header stays black ink; the pages hang below it as glass cards.
+    var usesGlassLayout: Bool {
+        guard settings.glassDesign else { return false }
+        if #available(macOS 26, *) { return true }
+        return false
+    }
+
+    private var isGlassOpen: Bool { status == .open && usesGlassLayout }
+
     var topRadius: CGFloat { status == .open ? Self.openTopRadius : Self.closedTopRadius }
     var bottomRadius: CGFloat {
+        if isGlassOpen { return 16 }
         if status == .open || activity == .alert || activity == .affirmation { return 24 }
         return showsLyricLine ? 14 : 10
     }
@@ -210,15 +256,33 @@ final class NotchViewModel {
 
     var currentSize: CGSize { status == .open ? openSize : closedSize }
 
+    /// The black shape's size. In the glass layout it shrinks to a bar holding just the header.
+    var inkSize: CGSize {
+        isGlassOpen ? CGSize(width: openSize.width, height: notchSize.height + 4) : currentSize
+    }
+
+    /// The area below the ink bar that the glass cards fill. It stays inside `openSize`,
+    /// so hover tracking and hit-testing work unchanged.
+    var glassCardsSize: CGSize {
+        CGSize(
+            width: Self.openContentSize.width,
+            height: openSize.height - inkSize.height - Self.glassGap
+        )
+    }
+
     /// The notch's visible area in global screen coordinates, used for hit-testing the mouse.
     var hitRect: CGRect {
         let size = currentSize
-        let rect = CGRect(
+        var rect = CGRect(
             x: screenFrame.midX - size.width / 2,
             y: screenFrame.maxY - size.height,
             width: size.width,
             height: size.height
         )
+        if status == .closed {
+            // Hovering a circle beside the notch opens it too.
+            rect.size.width += satellitesWidth
+        }
         return status == .closed ? rect.insetBy(dx: -8, dy: -6) : rect
     }
 

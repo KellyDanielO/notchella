@@ -31,6 +31,7 @@ final class AppSettings {
         static let downloadsActivity = "downloadsActivity"
         static let agentBreakNudge = "agentBreakNudge"
         static let agentBreakMinutes = "agentBreakMinutes"
+        static let glassDesign = "glassDesign"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -61,6 +62,8 @@ final class AppSettings {
     var downloadsActivity: Bool { didSet { defaults.set(downloadsActivity, forKey: Key.downloadsActivity) } }
     var agentBreakNudge: Bool { didSet { defaults.set(agentBreakNudge, forKey: Key.agentBreakNudge) } }
     var agentBreakMinutes: Int { didSet { defaults.set(agentBreakMinutes, forKey: Key.agentBreakMinutes) } }
+    /// Experimental: a black ink bar over the camera with liquid glass cards hanging below (macOS 26+).
+    var glassDesign: Bool { didSet { defaults.set(glassDesign, forKey: Key.glassDesign) } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -91,6 +94,7 @@ final class AppSettings {
             Key.downloadsActivity: true,
             Key.agentBreakNudge: true,
             Key.agentBreakMinutes: 25,
+            Key.glassDesign: false,
         ])
         openOnHover = defaults.bool(forKey: Key.openOnHover)
         hoverDelay = defaults.double(forKey: Key.hoverDelay)
@@ -118,5 +122,6 @@ final class AppSettings {
         downloadsActivity = defaults.bool(forKey: Key.downloadsActivity)
         agentBreakNudge = defaults.bool(forKey: Key.agentBreakNudge)
         agentBreakMinutes = defaults.integer(forKey: Key.agentBreakMinutes)
+        glassDesign = defaults.bool(forKey: Key.glassDesign)
     }
 }

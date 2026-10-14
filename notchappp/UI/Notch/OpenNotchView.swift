@@ -41,7 +41,7 @@ struct OpenNotchView: View {
 }
 
 /// While the notch is open, alerts slide in over the top of the content.
-private struct OpenAlertBanner: View {
+struct OpenAlertBanner: View {
     @Environment(AlertManager.self) private var alerts
 
     var body: some View {
@@ -67,7 +67,7 @@ private struct OpenAlertBanner: View {
     }
 }
 
-private struct NotchHeaderView: View {
+struct NotchHeaderView: View {
     @Environment(NotchViewModel.self) private var notch
     @Environment(BatteryManager.self) private var battery
     @Environment(HUDManager.self) private var hud

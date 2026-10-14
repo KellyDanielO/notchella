@@ -76,7 +76,7 @@ ditto "$DERIVED/Build/Products/Release/notchappp.app" "$APP"
 ln -s /Applications "$STAGE/Applications"
 
 if [[ -n "$DEVELOPER_ID" ]]; then
-  echo "▸ Signing with Developer ID $DEVELOPER_ID…"
+  echo "▸ Signing with Developer ID ${DEVELOPER_ID}…"
   # Inside-out, as Sparkle's docs describe: every nested helper needs the hardened runtime and a timestamp.
   sign() { codesign --force --timestamp --options runtime --sign "$DEVELOPER_ID" "$@"; }
   SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
