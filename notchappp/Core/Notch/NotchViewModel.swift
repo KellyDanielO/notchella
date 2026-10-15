@@ -94,7 +94,9 @@ final class NotchViewModel {
 
     private(set) var status: Status = .closed
     private(set) var isHovering = false
-    var tab: Tab = .home
+    var tab: Tab = .home {
+        didSet { if status == .open { trackTabUsed() } }
+    }
     var toolsPage: ToolsPage = .dev
     var isDropTargeted = false {
         didSet { if isDropTargeted { open() } }
@@ -217,18 +219,25 @@ final class NotchViewModel {
         CGFloat(closedBeads.count) * (Self.satelliteGap + satelliteDiameter)
     }
 
+    /// Wings hug their content: a glyph and a short readout (a timer, a percentage) take the
+    /// compact width, and only wordier states, like a build result or a project name, get more.
+    private static let compactWingWidth: CGFloat = 52
+
     var wingWidth: CGFloat {
         switch activity {
         case .none: 0
         case .music: notchSize.height + 14
-        case .charging: 72
+        case .charging: 56
         case .hud: 84
         case .alert: 64
-        case .agent: 84
-        case .build: 84
+        case .agent:
+            if agents.justFinished != nil { 84 }
+            else if agents.sessionNeedingInput == nil && agents.workingSessions.count > 1 { 68 }
+            else { Self.compactWingWidth }
+        case .build: xcode.freshResult != nil ? 84 : Self.compactWingWidth
         case .charged: 96
         case .headphones: (headphones.device?.hasSeparateBuds ?? false) ? 96 : 72
-        case .download: 64
+        case .download: Self.compactWingWidth
         case .breakNudge: 96
         case .affirmation: 0
         case .idle: notchSize.height - 6
@@ -330,6 +339,12 @@ final class NotchViewModel {
             status = .open
             isHovering = false
         }
+        trackTabUsed()
+    }
+
+    /// Counts which tabs get used, once per tab per day.
+    private func trackTabUsed() {
+        Analytics.trackDaily("tab_used", with: ["tab": tab.rawValue])
     }
 
     func close() {

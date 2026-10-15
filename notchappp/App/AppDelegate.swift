@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.notch.openSettings = { [weak self] in self?.showSettings() }
         notchController = NotchWindowController(model: model)
         model.start()
+        Analytics.start(settings: model.settings)
 
         #if DEBUG
         // `-NotchOpenOnLaunch YES [-NotchOpenTab dev]` keeps the notch open for screenshots and layout work.
@@ -33,11 +34,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func checkForUpdates() {
+        Analytics.track("update_check")
         model.updates.checkForUpdates()
     }
 
     func showSettings() {
         model.notch.close()
+        Analytics.track("settings_opened")
 
         if settingsWindow == nil {
             let root = SettingsView()

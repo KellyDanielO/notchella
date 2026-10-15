@@ -57,7 +57,7 @@ All of them are optional; each feature works on its own.
 
 ### Privacy
 
-Notchella has no accounts, analytics or tracking. Everything runs on your Mac. Its only network requests fetch synced lyrics from LRCLIB, album artwork for the current song, and Sparkle's daily update check.
+Notchella has no accounts, ads or personal tracking. Everything runs on your Mac. Its only network requests fetch synced lyrics from LRCLIB, album artwork for the current song, Sparkle's daily update check, and anonymous usage counts sent to [Aptabase](https://aptabase.com): launches, a daily "app is in use" ping, and which tabs get opened. There's no device identifier or personal data, and you can turn it off in Settings → Privacy.
 
 ## Building from source
 

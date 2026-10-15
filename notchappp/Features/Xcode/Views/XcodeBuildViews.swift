@@ -85,6 +85,8 @@ struct XcodeClosedTrailing: View {
         }
         .font(.system(size: 12, weight: .bold).monospacedDigit())
         .lineLimit(1)
+        // The compact wing fits "12:34"; a build past an hour shrinks a little instead of cutting off.
+        .minimumScaleFactor(0.75)
     }
 }
 

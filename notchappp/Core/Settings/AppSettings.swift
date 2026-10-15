@@ -32,6 +32,7 @@ final class AppSettings {
         static let agentBreakNudge = "agentBreakNudge"
         static let agentBreakMinutes = "agentBreakMinutes"
         static let glassDesign = "glassDesign"
+        static let shareUsageData = Analytics.enabledKey
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -64,6 +65,7 @@ final class AppSettings {
     var agentBreakMinutes: Int { didSet { defaults.set(agentBreakMinutes, forKey: Key.agentBreakMinutes) } }
     /// Experimental: a black ink bar over the camera with liquid glass cards hanging below (macOS 26+).
     var glassDesign: Bool { didSet { defaults.set(glassDesign, forKey: Key.glassDesign) } }
+    var shareUsageData: Bool { didSet { defaults.set(shareUsageData, forKey: Key.shareUsageData) } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -95,6 +97,7 @@ final class AppSettings {
             Key.agentBreakNudge: true,
             Key.agentBreakMinutes: 25,
             Key.glassDesign: true,
+            Key.shareUsageData: true,
         ])
         openOnHover = defaults.bool(forKey: Key.openOnHover)
         hoverDelay = defaults.double(forKey: Key.hoverDelay)
@@ -123,5 +126,6 @@ final class AppSettings {
         agentBreakNudge = defaults.bool(forKey: Key.agentBreakNudge)
         agentBreakMinutes = defaults.integer(forKey: Key.agentBreakMinutes)
         glassDesign = defaults.bool(forKey: Key.glassDesign)
+        shareUsageData = defaults.bool(forKey: Key.shareUsageData)
     }
 }

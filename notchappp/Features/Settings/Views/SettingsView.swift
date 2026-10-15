@@ -202,6 +202,15 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                Toggle("Share anonymous usage data", isOn: $settings.shareUsageData)
+            } header: {
+                Text("Privacy")
+            } footer: {
+                Text("Counts launches and which tabs you use, so I know what to improve. Nothing personal is ever sent.")
+                    .foregroundStyle(.secondary)
+            }
+
             AboutSection()
 
             Section {

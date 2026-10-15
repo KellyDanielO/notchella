@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		685D1DD73081057E005D6893 /* Aptabase in Frameworks */ = {isa = PBXBuildFile; productRef = 685D1DD63081057E005D6893 /* Aptabase */; };
 		6889B3AA307CF3370051F8E9 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 6889B3A9307CF3370051F8E9 /* Sparkle */; };
 /* End PBXBuildFile section */
 
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				6889B3AA307CF3370051F8E9 /* Sparkle in Frameworks */,
+				685D1DD73081057E005D6893 /* Aptabase in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -67,6 +69,7 @@
 			name = notchappp;
 			packageProductDependencies = (
 				6889B3A9307CF3370051F8E9 /* Sparkle */,
+				685D1DD63081057E005D6893 /* Aptabase */,
 			);
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* notchappp.app */;
@@ -98,6 +101,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6889B3A8307CF3370051F8E9 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				685D1DD53081057E005D6893 /* XCRemoteSwiftPackageReference "aptabase-swift" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -264,7 +268,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/Notchella.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = UPF7ZCW542;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -279,7 +283,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kellydaniel.notchappp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -299,7 +303,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/Notchella.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = UPF7ZCW542;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -314,7 +318,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kellydaniel.notchappp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -350,6 +354,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		685D1DD53081057E005D6893 /* XCRemoteSwiftPackageReference "aptabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aptabase/aptabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.12;
+			};
+		};
 		6889B3A8307CF3370051F8E9 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
@@ -361,6 +373,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		685D1DD63081057E005D6893 /* Aptabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 685D1DD53081057E005D6893 /* XCRemoteSwiftPackageReference "aptabase-swift" */;
+			productName = Aptabase;
+		};
 		6889B3A9307CF3370051F8E9 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6889B3A8307CF3370051F8E9 /* XCRemoteSwiftPackageReference "Sparkle" */;

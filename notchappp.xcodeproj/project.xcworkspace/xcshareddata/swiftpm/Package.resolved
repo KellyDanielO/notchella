@@ -1,6 +1,15 @@
 {
-  "originHash" : "e721da7f9826abdffcb6185e886155efa2514bd6234475f1afa893e29eb258d6",
+  "originHash" : "aba9bb08a780d154343425c1d98c91a26b1a3a12f408a48a2f7b398a6a8cc7b8",
   "pins" : [
+    {
+      "identity" : "aptabase-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aptabase/aptabase-swift.git",
+      "state" : {
+        "revision" : "90aacf43eadf8bd1e4a66f14d8c40a46c9d15406",
+        "version" : "0.3.12"
+      }
+    },
     {
       "identity" : "sparkle",
       "kind" : "remoteSourceControl",
