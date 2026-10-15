@@ -100,6 +100,7 @@ struct NotchHeaderView: View {
                                 .transition(.scale.combined(with: .opacity))
                         }
                         HeadphonesHeaderBadge()
+                        UptimeBadge()
                         if battery.hasBattery {
                             BatteryRing(size: 22)
                         }

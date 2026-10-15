@@ -17,6 +17,7 @@ final class AppModel {
     let headphones: HeadphonesManager
     let downloads: DownloadMonitor
     let idle: IdleManager
+    let menuBar = MenuBarSpace()
     let keepAwake = KeepAwakeManager()
     let devServers = DevServerScanner()
     let updates = UpdateManager()
@@ -45,13 +46,14 @@ final class AppModel {
             xcode: xcode,
             headphones: headphones,
             downloads: downloads,
-            idle: idle
+            idle: idle,
+            menuBar: menuBar
         )
 
         // Ambient affirmations only drift in when they won't cover something more useful.
         idle.canShowAmbient = { [weak self] in
             guard let notch = self?.notch else { return false }
-            return notch.status == .closed && [.none, .idle, .music].contains(notch.activity)
+            return notch.status == .closed && notch.hasRoomForAffirmation && [.none, .idle, .music].contains(notch.activity)
         }
         battery.onPluggedIn = { [weak self] in self?.idle.surprise() }
 
@@ -71,6 +73,7 @@ final class AppModel {
         headphones.start()
         downloads.start()
         idle.start()
+        menuBar.start()
 
         updateKeepAwake()
         keepAwakeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in

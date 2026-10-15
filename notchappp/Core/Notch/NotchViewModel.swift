@@ -128,6 +128,7 @@ final class NotchViewModel {
     @ObservationIgnored private let headphones: HeadphonesManager
     @ObservationIgnored private let downloads: DownloadMonitor
     @ObservationIgnored private let idle: IdleManager
+    @ObservationIgnored private let menuBar: MenuBarSpace
     @ObservationIgnored private var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var closeTask: Task<Void, Never>?
     @ObservationIgnored private var dragEndTask: Task<Void, Never>?
@@ -137,7 +138,7 @@ final class NotchViewModel {
 
     init(settings: AppSettings, music: MusicManager, battery: BatteryManager, lyrics: LyricsManager, hud: HUDManager, alerts: AlertManager,
          agents: AgentMonitor, xcode: XcodeBuildMonitor, headphones: HeadphonesManager,
-         downloads: DownloadMonitor, idle: IdleManager) {
+         downloads: DownloadMonitor, idle: IdleManager, menuBar: MenuBarSpace) {
         self.settings = settings
         self.music = music
         self.battery = battery
@@ -149,6 +150,7 @@ final class NotchViewModel {
         self.headphones = headphones
         self.downloads = downloads
         self.idle = idle
+        self.menuBar = menuBar
     }
 
     // MARK: Geometry
@@ -166,6 +168,11 @@ final class NotchViewModel {
             notchSize = CGSize(width: 185, height: menuBarHeight > 0 ? menuBarHeight : 24)
             hasPhysicalNotch = false
         }
+        menuBar.configure(
+            screen: screen.frame,
+            notch: CGRect(x: screen.frame.midX - notchSize.width / 2, y: screen.frame.maxY - notchSize.height,
+                          width: notchSize.width, height: notchSize.height)
+        )
     }
 
     var activity: Activity {
@@ -178,13 +185,39 @@ final class NotchViewModel {
         if headphones.isShowingActivity { return .headphones }
         if battery.isShowingChargedActivity { return .charged }
         if settings.showChargingActivity && battery.isShowingChargingActivity { return .charging }
-        if downloads.isShowingActivity { return .download }
-        if idle.ambientAffirmation != nil && status == .closed { return .affirmation }
-        if xcode.isBuilding { return .build }
-        if settings.showMusicActivity && music.track != nil && music.isPlaying { return .music }
-        if agents.isAnyWorking { return .agent }
-        if settings.idleEyes { return .idle }
+        if downloads.justFinished != nil && downloads.isShowingActivity { return .download }
+        if idle.ambientAffirmation != nil && status == .closed && hasRoomForAffirmation { return .affirmation }
+        // Ongoing and ambient states last for minutes, so they give way to the menu bar: rather than
+        // sit on an app's menus or a menu bar icon, the notch shrinks back to the camera housing.
+        if downloads.isShowingActivity && fitsBesideMenus(.download) { return .download }
+        if xcode.isBuilding && fitsBesideMenus(.build) { return .build }
+        if settings.showMusicActivity && music.track != nil && music.isPlaying && fitsBesideMenus(.music) { return .music }
+        if agents.isAnyWorking && fitsBesideMenus(.agent) { return .agent }
+        if settings.idleEyes && fitsBesideMenus(.idle) { return .idle }
         return .none
+    }
+
+    /// The menu bar left free on the tighter side of the notch, before the wings would cover the
+    /// frontmost app's menus or a menu bar icon.
+    private var menuBarRoom: (left: CGFloat, right: CGFloat) {
+        let notchMinX = screenFrame.midX - notchSize.width / 2
+        let notchMaxX = screenFrame.midX + notchSize.width / 2
+        return (
+            left: menuBar.leftItemsMaxX.map { notchMinX - $0 } ?? .infinity,
+            right: menuBar.rightItemsMinX.map { $0 - notchMaxX } ?? .infinity
+        )
+    }
+
+    /// Affirmations drop down as a wide card, which would hide most of an app's menus.
+    var hasRoomForAffirmation: Bool {
+        let room = menuBarRoom
+        return (Self.alertMinWidth - notchSize.width) / 2 <= min(room.left, room.right)
+    }
+
+    private func fitsBesideMenus(_ activity: Activity) -> Bool {
+        guard status == .closed else { return true }
+        let room = menuBarRoom
+        return wingWidth(for: activity) + Self.closedTopRadius <= min(room.left, room.right)
     }
 
     /// Activities that keep running for a while, in the same priority order `activity` uses.
@@ -202,13 +235,16 @@ final class NotchViewModel {
     /// second activity: whatever is running besides the activity holding the wings.
     var closedBeads: [Activity] {
         guard usesGlassLayout, status == .closed else { return [] }
-        let ongoing = ongoingActivities
+        let ongoing = ongoingActivities.filter(fitsBesideMenus)
         if activity == .alert || activity == .affirmation { return [] }
 
         // A brief activity (volume, a finished build…) borrows the wings from the top ongoing one,
         // which takes them back afterwards. Leave it out so it doesn't flash up as a bead.
         let displacedCount = ongoing.contains(activity) ? 0 : 1
-        return Array(ongoing.filter { $0 != activity }.dropFirst(displacedCount).prefix(2))
+        let beads = Array(ongoing.filter { $0 != activity }.dropFirst(displacedCount).prefix(2))
+        // The circles trail off to the right, so they need room on that side as well.
+        let reach = wingWidth + Self.closedTopRadius + CGFloat(beads.count) * (Self.satelliteGap + satelliteDiameter)
+        return reach <= menuBarRoom.right ? beads : []
     }
 
     /// A circle as tall as the notch, less a little breathing room.
@@ -223,7 +259,9 @@ final class NotchViewModel {
     /// compact width, and only wordier states, like a build result or a project name, get more.
     private static let compactWingWidth: CGFloat = 52
 
-    var wingWidth: CGFloat {
+    var wingWidth: CGFloat { wingWidth(for: activity) }
+
+    private func wingWidth(for activity: Activity) -> CGFloat {
         switch activity {
         case .none: 0
         case .music: notchSize.height + 14
