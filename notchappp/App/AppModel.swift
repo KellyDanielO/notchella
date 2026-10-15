@@ -18,6 +18,7 @@ final class AppModel {
     let downloads: DownloadMonitor
     let idle: IdleManager
     let menuBar = MenuBarSpace()
+    let network: NetworkMonitor
     let keepAwake = KeepAwakeManager()
     let devServers = DevServerScanner()
     let updates = UpdateManager()
@@ -35,6 +36,7 @@ final class AppModel {
         headphones = HeadphonesManager(settings: settings)
         downloads = DownloadMonitor(settings: settings)
         idle = IdleManager(settings: settings, reflect: reflect)
+        network = NetworkMonitor(settings: settings)
         notch = NotchViewModel(
             settings: settings,
             music: music,
@@ -47,7 +49,8 @@ final class AppModel {
             headphones: headphones,
             downloads: downloads,
             idle: idle,
-            menuBar: menuBar
+            menuBar: menuBar,
+            network: network
         )
 
         // Ambient affirmations only drift in when they won't cover something more useful.
@@ -74,6 +77,7 @@ final class AppModel {
         downloads.start()
         idle.start()
         menuBar.start()
+        network.start()
 
         updateKeepAwake()
         keepAwakeTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in

@@ -37,6 +37,7 @@ final class NotchWindowController {
             .environment(model.keepAwake)
             .environment(model.devServers)
             .environment(model.headphones)
+            .environment(model.network)
             .environment(model.downloads)
             .environment(model.idle)
             .environment(\.colorScheme, .dark)

@@ -20,6 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let tab = UserDefaults.standard.string(forKey: "NotchOpenTab").flatMap(NotchViewModel.Tab.init(rawValue:))
             model.notch.open(tab: tab)
         }
+        // `-NotchSimulate offline|online|lowBattery` shows that activity without the real event.
+        switch UserDefaults.standard.string(forKey: "NotchSimulate") {
+        case "offline": model.network.simulate(online: false)
+        case "online": model.network.simulate(online: true)
+        case "lowBattery": model.battery.simulateLowBattery()
+        default: break
+        }
         #endif
     }
 

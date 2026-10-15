@@ -74,12 +74,14 @@ struct SettingsView: View {
                 Toggle("Charging", isOn: $settings.showChargingActivity)
                 Toggle("Headphones & earbuds", isOn: $settings.headphonesActivity)
                 Toggle("Downloads", isOn: $settings.downloadsActivity)
+                Toggle("Internet connection lost & restored", isOn: $settings.networkActivity)
                 Toggle("Tell me when the battery is charged", isOn: $settings.fullChargeAlert)
                 if settings.fullChargeAlert {
                     Picker("Charged at", selection: $settings.fullChargeTarget) {
                         ForEach([80, 85, 90, 95, 100], id: \.self) { Text("\($0)%").tag($0) }
                     }
                 }
+                Toggle("Warn me when the battery is low", isOn: $settings.lowBatteryAlert)
             }
 
             Section {
@@ -183,7 +185,7 @@ struct SettingsView: View {
             } header: {
                 Text("Permissions")
             } footer: {
-                Text("Accessibility powers the volume & brightness keys and reading notification banners.")
+                Text("Accessibility powers the volume & brightness keys, reading notification banners, and keeping the notch clear of app menus.")
                     .foregroundStyle(.secondary)
             }
 

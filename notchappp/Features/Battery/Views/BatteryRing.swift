@@ -7,6 +7,8 @@ struct BatteryRing: View {
 
     private var tint: Color {
         if battery.isCharging || battery.isPluggedIn { return .green }
+        // Yellow in Low Power Mode, like the iPhone's battery icon.
+        if battery.isLowPowerModeOn { return .yellow }
         if battery.level <= 20 { return .red }
         return .white
     }

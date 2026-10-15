@@ -1,5 +1,6 @@
 import Aptabase
 import Foundation
+import Security
 
 /// Anonymous usage counts, sent to Aptabase (no personal data, no device identifier).
 ///
@@ -12,13 +13,28 @@ enum Analytics {
 
     private static let appKey = "A-US-9870459032"
     private static let lastSentKey = "analyticsLastSent"
+    private static let teamID = "UPF7ZCW542"
     private static var heartbeat: Timer?
 
     private static var isEnabled: Bool {
-        UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
+        isOfficialBuild && UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
     }
 
+    /// Whether this copy carries a valid Apple-issued signature from the Notchella team: Developer ID
+    /// for releases, Apple Development for builds run from Xcode (which Aptabase files as debug).
+    private static let isOfficialBuild: Bool = {
+        var code: SecCode?
+        var requirement: SecRequirement?
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
+              SecRequirementCreateWithString(
+                  "anchor apple generic and certificate leaf[subject.OU] = \"\(teamID)\"" as CFString, [], &requirement
+              ) == errSecSuccess, let requirement
+        else { return false }
+        return SecCodeCheckValidity(code, [], requirement) == errSecSuccess
+    }()
+
     static func start(settings: AppSettings) {
+        guard isOfficialBuild else { return }
         Aptabase.shared.initialize(appKey: appKey)
         track("app_started", with: [
             "glassDesign": settings.glassDesign,

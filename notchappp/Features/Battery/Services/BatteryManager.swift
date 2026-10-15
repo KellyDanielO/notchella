@@ -4,7 +4,8 @@ import notify
 import SwiftUI
 
 /// Watches the internal battery. Briefly flags a charging activity when power is connected,
-/// and a "charged" activity when the battery reaches the target level while plugged in.
+/// a "charged" activity when the battery reaches the target level while plugged in, and, like the
+/// iPhone, a low battery warning at 20% and 10% that offers to turn on Low Power Mode.
 @Observable
 final class BatteryManager {
     private(set) var hasBattery = false
@@ -13,6 +14,9 @@ final class BatteryManager {
     private(set) var isPluggedIn = false
     private(set) var isShowingChargingActivity = false
     private(set) var isShowingChargedActivity = false
+    /// The level a low battery warning is showing for, or nil.
+    private(set) var lowBatteryWarning: Int?
+    private(set) var isLowPowerModeOn = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     @ObservationIgnored private let settings: AppSettings
     @ObservationIgnored var onPluggedIn: () -> Void = {}
@@ -20,6 +24,10 @@ final class BatteryManager {
     @ObservationIgnored private var notifyToken: Int32 = NOTIFY_TOKEN_INVALID
     @ObservationIgnored private var activityTask: Task<Void, Never>?
     @ObservationIgnored private var chargedTask: Task<Void, Never>?
+    @ObservationIgnored private var lowBatteryTask: Task<Void, Never>?
+    @ObservationIgnored private var powerStateObserver: NSObjectProtocol?
+
+    private static let lowBatteryLevels = [20, 10]
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -30,6 +38,12 @@ final class BatteryManager {
         // Posted by the system whenever any power source property changes.
         notify_register_dispatch(kIOPSNotifyAnyPowerSource, &notifyToken, .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.update(announceChanges: true) }
+        }
+        powerStateObserver = NotificationCenter.default.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            let isOn = ProcessInfo.processInfo.isLowPowerModeEnabled
+            withAnimation(.smooth) { self?.isLowPowerModeOn = isOn }
         }
     }
 
@@ -55,6 +69,11 @@ final class BatteryManager {
             if announceChanges && pluggedIn && !isPluggedIn {
                 onPluggedIn()
                 showChargingActivity()
+                dismissLowBatteryWarning()
+            }
+            if announceChanges && settings.lowBatteryAlert && !pluggedIn,
+               let crossed = Self.lowBatteryLevels.first(where: { previousLevel > $0 && level <= $0 }) {
+                showLowBatteryWarning(crossed)
             }
             isPluggedIn = pluggedIn
 
@@ -63,6 +82,42 @@ final class BatteryManager {
                 showChargedActivity()
             }
             return
+        }
+    }
+
+    func dismissLowBatteryWarning() {
+        lowBatteryTask?.cancel()
+        guard lowBatteryWarning != nil else { return }
+        withAnimation(.notchActivity) { lowBatteryWarning = nil }
+    }
+
+    /// Turns on Low Power Mode while on battery. Changing it needs an administrator, so macOS asks
+    /// for Touch ID or the password first; if that's cancelled nothing changes.
+    func turnOnLowPowerMode() {
+        dismissLowBatteryWarning()
+        NSApp.activate()
+        Task.detached(priority: .userInitiated) {
+            let script = NSAppleScript(source: "do shell script \"/usr/bin/pmset -b lowpowermode 1\" with administrator privileges")
+            var error: NSDictionary?
+            script?.executeAndReturnError(&error)
+        }
+    }
+
+    #if DEBUG
+    func simulateLowBattery() {
+        level = 20
+        showLowBatteryWarning(20)
+    }
+    #endif
+
+    private func showLowBatteryWarning(_ level: Int) {
+        NSSound(named: "Tink")?.play()
+        lowBatteryTask?.cancel()
+        withAnimation(.notchActivity) { lowBatteryWarning = level }
+        lowBatteryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled else { return }
+            withAnimation(.notchActivity) { self?.lowBatteryWarning = nil }
         }
     }
 

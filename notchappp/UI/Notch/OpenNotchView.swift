@@ -99,6 +99,7 @@ struct NotchHeaderView: View {
                                 .help("Keeping your Mac awake")
                                 .transition(.scale.combined(with: .opacity))
                         }
+                        NetworkHeaderBadge()
                         HeadphonesHeaderBadge()
                         UptimeBadge()
                         if battery.hasBattery {

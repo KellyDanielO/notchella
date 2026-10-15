@@ -70,6 +70,10 @@ final class NotchViewModel {
         case download
         case breakNudge
         case affirmation
+        /// The internet just dropped or came back.
+        case network
+        /// The battery just fell to 20% or 10% while unplugged.
+        case lowBattery
         /// Nothing going on, but an idle style (eyes) is on.
         case idle
     }
@@ -129,6 +133,7 @@ final class NotchViewModel {
     @ObservationIgnored private let downloads: DownloadMonitor
     @ObservationIgnored private let idle: IdleManager
     @ObservationIgnored private let menuBar: MenuBarSpace
+    @ObservationIgnored private let network: NetworkMonitor
     @ObservationIgnored private var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var closeTask: Task<Void, Never>?
     @ObservationIgnored private var dragEndTask: Task<Void, Never>?
@@ -138,7 +143,7 @@ final class NotchViewModel {
 
     init(settings: AppSettings, music: MusicManager, battery: BatteryManager, lyrics: LyricsManager, hud: HUDManager, alerts: AlertManager,
          agents: AgentMonitor, xcode: XcodeBuildMonitor, headphones: HeadphonesManager,
-         downloads: DownloadMonitor, idle: IdleManager, menuBar: MenuBarSpace) {
+         downloads: DownloadMonitor, idle: IdleManager, menuBar: MenuBarSpace, network: NetworkMonitor) {
         self.settings = settings
         self.music = music
         self.battery = battery
@@ -151,6 +156,7 @@ final class NotchViewModel {
         self.downloads = downloads
         self.idle = idle
         self.menuBar = menuBar
+        self.network = network
     }
 
     // MARK: Geometry
@@ -179,10 +185,12 @@ final class NotchViewModel {
         // Highest priority first: direct feedback, then things needing attention, then ambient status.
         if hud.visibleKind != nil && status == .closed { return .hud }
         if alerts.currentAlert != nil { return .alert }
+        if battery.lowBatteryWarning != nil && status == .closed { return .lowBattery }
         if xcode.freshResult != nil { return .build }
         if agents.justFinished != nil || agents.sessionNeedingInput != nil { return .agent }
         if agents.breakNudgeMinutes != nil { return .breakNudge }
         if headphones.isShowingActivity { return .headphones }
+        if network.isShowingActivity { return .network }
         if battery.isShowingChargedActivity { return .charged }
         if settings.showChargingActivity && battery.isShowingChargingActivity { return .charging }
         if downloads.justFinished != nil && downloads.isShowingActivity { return .download }
@@ -236,7 +244,7 @@ final class NotchViewModel {
     var closedBeads: [Activity] {
         guard usesGlassLayout, status == .closed else { return [] }
         let ongoing = ongoingActivities.filter(fitsBesideMenus)
-        if activity == .alert || activity == .affirmation { return [] }
+        if activity == .alert || activity == .affirmation || activity == .lowBattery { return [] }
 
         // A brief activity (volume, a finished build…) borrows the wings from the top ongoing one,
         // which takes them back afterwards. Leave it out so it doesn't flash up as a bead.
@@ -278,6 +286,8 @@ final class NotchViewModel {
         case .download: Self.compactWingWidth
         case .breakNudge: 96
         case .affirmation: 0
+        case .network: 64
+        case .lowBattery: 64
         case .idle: notchSize.height - 6
         }
     }
@@ -298,7 +308,7 @@ final class NotchViewModel {
     var topRadius: CGFloat { status == .open ? Self.openTopRadius : Self.closedTopRadius }
     var bottomRadius: CGFloat {
         if isGlassOpen { return 16 }
-        if status == .open || activity == .alert || activity == .affirmation { return 24 }
+        if status == .open || activity == .alert || activity == .affirmation || activity == .lowBattery { return 24 }
         return showsLyricLine ? 14 : 10
     }
 
@@ -307,7 +317,7 @@ final class NotchViewModel {
             width: notchSize.width + wingWidth * 2 + Self.closedTopRadius * 2,
             height: notchSize.height + (showsLyricLine ? Self.lyricLineHeight : 0)
         )
-        if activity == .alert {
+        if activity == .alert || activity == .lowBattery {
             size.width = max(size.width, Self.alertMinWidth)
             size.height += Self.alertHeight
         } else if activity == .affirmation {

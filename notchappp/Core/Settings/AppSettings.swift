@@ -33,6 +33,8 @@ final class AppSettings {
         static let agentBreakMinutes = "agentBreakMinutes"
         static let glassDesign = "glassDesign"
         static let shareUsageData = Analytics.enabledKey
+        static let networkActivity = "networkActivity"
+        static let lowBatteryAlert = "lowBatteryAlert"
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -66,6 +68,8 @@ final class AppSettings {
     /// Experimental: a black ink bar over the camera with liquid glass cards hanging below (macOS 26+).
     var glassDesign: Bool { didSet { defaults.set(glassDesign, forKey: Key.glassDesign) } }
     var shareUsageData: Bool { didSet { defaults.set(shareUsageData, forKey: Key.shareUsageData) } }
+    var networkActivity: Bool { didSet { defaults.set(networkActivity, forKey: Key.networkActivity) } }
+    var lowBatteryAlert: Bool { didSet { defaults.set(lowBatteryAlert, forKey: Key.lowBatteryAlert) } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -98,6 +102,8 @@ final class AppSettings {
             Key.agentBreakMinutes: 25,
             Key.glassDesign: true,
             Key.shareUsageData: true,
+            Key.networkActivity: true,
+            Key.lowBatteryAlert: true,
         ])
         openOnHover = defaults.bool(forKey: Key.openOnHover)
         hoverDelay = defaults.double(forKey: Key.hoverDelay)
@@ -127,5 +133,7 @@ final class AppSettings {
         agentBreakMinutes = defaults.integer(forKey: Key.agentBreakMinutes)
         glassDesign = defaults.bool(forKey: Key.glassDesign)
         shareUsageData = defaults.bool(forKey: Key.shareUsageData)
+        networkActivity = defaults.bool(forKey: Key.networkActivity)
+        lowBatteryAlert = defaults.bool(forKey: Key.lowBatteryAlert)
     }
 }

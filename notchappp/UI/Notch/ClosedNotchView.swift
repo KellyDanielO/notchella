@@ -30,6 +30,11 @@ struct ClosedNotchView: View {
                     .padding(.horizontal, 24)
                     .frame(height: NotchViewModel.affirmationHeight, alignment: .top)
                     .transition(.blurFade)
+            } else if notch.activity == .lowBattery {
+                LowBatteryBanner()
+                    .padding(.horizontal, 20)
+                    .frame(height: NotchViewModel.alertHeight, alignment: .top)
+                    .transition(.blurFade)
             } else if notch.activity == .alert {
                 AlertBannerContent()
                     .padding(.horizontal, 20)
@@ -95,6 +100,14 @@ struct ClosedNotchView: View {
                 .transition(.blurFade.combined(with: .scale(scale: 0.3)))
         case .affirmation:
             EmptyView()
+        case .network:
+            NetworkClosedLeading()
+                .padding(.leading, 10)
+                .transition(.blurFade.combined(with: .scale(scale: 0.5)))
+        case .lowBattery:
+            LowBatteryClosedLeading()
+                .padding(.leading, 12)
+                .transition(.blurFade.combined(with: .scale(scale: 0.5)))
         case .charged:
             Image(systemName: "battery.100percent.bolt")
                 .font(.system(size: 14, weight: .semibold))
@@ -155,6 +168,14 @@ struct ClosedNotchView: View {
                 .transition(.blurFade.combined(with: .scale(scale: 0.3)))
         case .affirmation:
             EmptyView()
+        case .network:
+            NetworkClosedTrailing()
+                .padding(.trailing, 10)
+                .transition(.blurFade)
+        case .lowBattery:
+            LowBatteryClosedTrailing()
+                .padding(.trailing, 12)
+                .transition(.blurFade)
         case .charged:
             Text(battery.level >= 100 ? "Charged" : "\(battery.level)% ✓")
                 .font(.system(size: 12, weight: .heavy))
@@ -169,7 +190,7 @@ struct ClosedNotchView: View {
     /// Taps act on what's showing: dismiss nudges, reveal a finished download, or open the notch.
     private func handleTap() {
         switch notch.activity {
-        case .alert:
+        case .alert, .lowBattery:
             break
         case .affirmation:
             idle.dismissAmbientAffirmation()
