@@ -71,7 +71,7 @@ final class AppSettings {
         self.defaults = defaults
         defaults.register(defaults: [
             Key.openOnHover: true,
-            Key.hoverDelay: 0.1,
+            Key.hoverDelay: 0.35,
             Key.hapticsEnabled: true,
             Key.showMusicActivity: true,
             Key.showChargingActivity: true,
