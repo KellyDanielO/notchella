@@ -24,3 +24,6 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+# Promo videos and their sources: large, kept locally only
+Design/Promo/

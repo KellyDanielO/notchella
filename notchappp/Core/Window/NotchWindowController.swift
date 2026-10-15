@@ -13,6 +13,9 @@ final class NotchWindowController {
     private var pollTimer: Timer?
     private var screenObserver: NSObjectProtocol?
     private var dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
+    /// Dragging a file out of the notch (from the Shelf or the Images tray) shouldn't
+    /// bring up the drop zones under it.
+    private var dragStartedInNotch = false
 
     init(model: AppModel) {
         self.model = model
@@ -25,6 +28,7 @@ final class NotchWindowController {
             .environment(model.battery)
             .environment(model.calendar)
             .environment(model.shelf)
+            .environment(model.imageTools)
             .environment(model.hud)
             .environment(model.alerts)
             .environment(model.reflect)
@@ -126,6 +130,7 @@ final class NotchWindowController {
 
         if event.type == .leftMouseDown || event.type == .rightMouseDown {
             dragPasteboardChangeCount = NSPasteboard(name: .drag).changeCount
+            dragStartedInNotch = model.notch.status == .open && model.notch.hitRect.contains(location)
             if isGlobal && model.notch.status == .open && !model.notch.hitRect.contains(location) {
                 model.notch.close()
             }
@@ -144,7 +149,7 @@ final class NotchWindowController {
 
     /// True while the left button is down and a drag that started after the last click carries files.
     private var isDraggingFiles: Bool {
-        guard NSEvent.pressedMouseButtons & 1 == 1 else { return false }
+        guard NSEvent.pressedMouseButtons & 1 == 1, !dragStartedInNotch else { return false }
         let pasteboard = NSPasteboard(name: .drag)
         return pasteboard.changeCount != dragPasteboardChangeCount
             && (pasteboard.types?.contains(.fileURL) ?? false)

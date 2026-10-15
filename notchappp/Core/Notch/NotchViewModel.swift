@@ -21,7 +21,7 @@ final class NotchViewModel {
             switch self {
             case .home: "Home"
             case .reflect: "Reflect"
-            case .dev: "Dev"
+            case .dev: "Tools"
             case .shelf: "Shelf"
             }
         }
@@ -30,8 +30,28 @@ final class NotchViewModel {
             switch self {
             case .home: "house.fill"
             case .reflect: "heart.text.square.fill"
-            case .dev: "chevron.left.forwardslash.chevron.right"
+            case .dev: "wrench.and.screwdriver.fill"
             case .shelf: "tray.fill"
+            }
+        }
+    }
+
+    /// The pages inside the Tools tab.
+    enum ToolsPage: CaseIterable {
+        case dev
+        case images
+
+        var title: String {
+            switch self {
+            case .dev: "Dev"
+            case .images: "Images"
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .dev: "chevron.left.forwardslash.chevron.right"
+            case .images: "photo.on.rectangle.angled"
             }
         }
     }
@@ -75,9 +95,12 @@ final class NotchViewModel {
     private(set) var status: Status = .closed
     private(set) var isHovering = false
     var tab: Tab = .home
+    var toolsPage: ToolsPage = .dev
     var isDropTargeted = false {
-        didSet { if isDropTargeted { open(tab: .shelf) } }
+        didSet { if isDropTargeted { open() } }
     }
+    /// Files are being dragged from elsewhere. The open notch swaps its page for drop zones.
+    private(set) var isDraggingFiles = false
 
     private(set) var notchSize = CGSize(width: 185, height: 32)
     private(set) var hasPhysicalNotch = true
@@ -105,6 +128,10 @@ final class NotchViewModel {
     @ObservationIgnored private let idle: IdleManager
     @ObservationIgnored private var hoverTask: Task<Void, Never>?
     @ObservationIgnored private var closeTask: Task<Void, Never>?
+    @ObservationIgnored private var dragEndTask: Task<Void, Never>?
+    /// The drop zones stay up this long after the button is released, because macOS hands the
+    /// drop over a moment after mouse-up. Hiding them at once removed the target mid-drop.
+    private static let dragEndGrace: Duration = .milliseconds(800)
 
     init(settings: AppSettings, music: MusicManager, battery: BatteryManager, lyrics: LyricsManager, hud: HUDManager, alerts: AlertManager,
          agents: AgentMonitor, xcode: XcodeBuildMonitor, headphones: HeadphonesManager,
@@ -282,6 +309,9 @@ final class NotchViewModel {
         if status == .closed {
             // Hovering a circle beside the notch opens it too.
             rect.size.width += satellitesWidth
+            // A file drag opens the notch from further away, so the drop zones open before the
+            // cursor reaches the top edge, where pausing makes macOS bring up Mission Control.
+            if isDraggingFiles { return rect.insetBy(dx: -60, dy: -70) }
         }
         return status == .closed ? rect.insetBy(dx: -8, dy: -6) : rect
     }
@@ -320,6 +350,7 @@ final class NotchViewModel {
 
     /// Called for every mouse event and on a slow timer by the window controller.
     func handleMouse(at point: CGPoint, isDraggingFiles: Bool) {
+        updateDragging(isDraggingFiles)
         let inside = hitRect.contains(point)
         if activity == .idle && status == .closed && point != mouseLocation {
             mouseLocation = point
@@ -334,7 +365,7 @@ final class NotchViewModel {
                 return
             }
             if isDraggingFiles {
-                open(tab: .shelf)
+                open()
                 return
             }
             // The peek only hints that the notch is clickable. With open-on-hover it would be a
@@ -359,6 +390,22 @@ final class NotchViewModel {
                     guard !Task.isCancelled else { return }
                     self?.close()
                 }
+            }
+        }
+    }
+
+    private func updateDragging(_ dragging: Bool) {
+        if dragging {
+            dragEndTask?.cancel()
+            dragEndTask = nil
+            guard !isDraggingFiles else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { isDraggingFiles = true }
+        } else if isDraggingFiles && dragEndTask == nil {
+            dragEndTask = Task { [weak self] in
+                try? await Task.sleep(for: Self.dragEndGrace)
+                guard let self, !Task.isCancelled else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { self.isDraggingFiles = false }
+                dragEndTask = nil
             }
         }
     }

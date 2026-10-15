@@ -3,7 +3,6 @@ import SwiftUI
 /// Fills the transparent panel and draws the notch at the top center.
 struct NotchRootView: View {
     @Environment(NotchViewModel.self) private var notch
-    @Environment(ShelfManager.self) private var shelf
     @Environment(MusicManager.self) private var music
     @Environment(AppSettings.self) private var settings
     @Namespace private var namespace
@@ -36,12 +35,8 @@ struct NotchRootView: View {
             }
         }
         .animation(.notchActivity, value: notch.closedBeads)
-        .dropDestination(for: URL.self) { urls, _ in
-            shelf.add(urls)
-            return true
-        } isTargeted: { targeted in
-            notch.isDropTargeted = targeted
-        }
+        // No drop target here: while files are dragged, the open notch shows DropZonesView, and
+        // its zones take the drop. A catch-all target on the whole notch used to win over them.
     }
 
     /// The black shape over the camera housing. In the glass layout it only holds the header.

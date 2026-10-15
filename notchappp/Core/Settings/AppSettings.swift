@@ -94,7 +94,7 @@ final class AppSettings {
             Key.downloadsActivity: true,
             Key.agentBreakNudge: true,
             Key.agentBreakMinutes: 25,
-            Key.glassDesign: false,
+            Key.glassDesign: true,
         ])
         openOnHover = defaults.bool(forKey: Key.openOnHover)
         hoverDelay = defaults.double(forKey: Key.hoverDelay)

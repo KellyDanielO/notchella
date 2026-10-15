@@ -43,7 +43,7 @@ struct SettingsView: View {
                 }
                 Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
                 if #available(macOS 26, *) {
-                    Toggle("Liquid glass design (preview)", isOn: $settings.glassDesign)
+                    Toggle("Liquid glass design", isOn: $settings.glassDesign)
                 }
             }
 

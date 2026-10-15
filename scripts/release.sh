@@ -110,6 +110,7 @@ echo "▸ Signing and writing appcast…"
 # Signs with the EdDSA key in the login keychain (created once with Sparkle's generate_keys).
 "$SPARKLE_BIN/generate_appcast" "$RELEASES" \
   --download-url-prefix "$SITE/downloads/releases/" \
+  --release-notes-url-prefix "$SITE/downloads/releases/" \
   --link "$SITE" \
   --maximum-deltas 0 \
   -o "$WEB/public/appcast.xml"

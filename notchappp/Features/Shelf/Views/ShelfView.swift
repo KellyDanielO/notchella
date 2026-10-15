@@ -1,3 +1,4 @@
+import QuickLookThumbnailing
 import SwiftUI
 
 /// Drop files on the notch to stash them, then drag them back out or AirDrop them.
@@ -71,12 +72,17 @@ private struct ShelfItemView: View {
 
     @Environment(ShelfManager.self) private var shelf
     @State private var isHovered = false
+    @State private var thumbnail: NSImage?
 
     var body: some View {
         VStack(spacing: 4) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+            // A Quick Look preview of the file itself (images, PDFs, videos), or its Finder icon.
+            Image(nsImage: thumbnail ?? NSWorkspace.shared.icon(forFile: url.path))
                 .resizable()
+                .scaledToFit()
+                .clipShape(RoundedRectangle(cornerRadius: thumbnail == nil ? 0 : 6, style: .continuous))
                 .frame(width: 48, height: 48)
+                .task(id: url) { thumbnail = await Self.preview(of: url) }
             Text(url.lastPathComponent)
                 .font(.system(size: 10.5, weight: .medium))
                 .lineLimit(2)
@@ -88,6 +94,20 @@ private struct ShelfItemView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(.white.opacity(isHovered ? 0.1 : 0))
         )
+        .overlay(alignment: .topTrailing) {
+            if isHovered {
+                Button { shelf.remove(url) } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.6))
+                }
+                .buttonStyle(PressableButtonStyle())
+                .help("Remove from Shelf")
+                .offset(x: 4, y: -4)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
         .onHover { hovering in withAnimation(.smooth(duration: 0.15)) { isHovered = hovering } }
         .onTapGesture(count: 2) { shelf.open(url) }
         .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
@@ -103,5 +123,15 @@ private struct ShelfItemView: View {
             Button("Remove from Shelf", role: .destructive) { shelf.remove(url) }
         }
         .help(url.path)
+    }
+
+    private static func preview(of url: URL) async -> NSImage? {
+        let request = QLThumbnailGenerator.Request(
+            fileAt: url,
+            size: CGSize(width: 96, height: 96),
+            scale: NSScreen.main?.backingScaleFactor ?? 2,
+            representationTypes: .thumbnail
+        )
+        return try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request).nsImage
     }
 }

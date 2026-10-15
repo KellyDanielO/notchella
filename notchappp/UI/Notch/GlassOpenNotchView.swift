@@ -32,8 +32,16 @@ struct GlassOpenNotchView: View {
         // (FocusNavigationSequence) into an endless loop and froze the app. Replacing the whole
         // container on a tab switch avoids it.
         Group {
-            if notch.tab == .home {
+            if notch.isDraggingFiles {
+                DropZonesView()
+                    .transition(.blurFade)
+            } else if notch.tab == .home {
                 GlassEffectContainer(spacing: Self.blendDistance) { home }
+            } else if notch.tab == .dev {
+                // Draws its own glass panels.
+                ToolsView()
+                    .settlingContent(isSettled)
+                    .transition(.blurFade)
             } else {
                 pageCard
             }
@@ -129,7 +137,7 @@ struct GlassOpenNotchView: View {
             case .reflect:
                 ReflectView()
             case .dev:
-                DevView()
+                EmptyView()
             case .shelf:
                 ShelfView()
             }

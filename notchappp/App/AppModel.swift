@@ -8,6 +8,7 @@ final class AppModel {
     let battery: BatteryManager
     let calendar = CalendarManager()
     let shelf = ShelfManager()
+    let imageTools = ImageToolsManager()
     let hud: HUDManager
     let alerts: AlertManager
     let reflect: ReflectStore

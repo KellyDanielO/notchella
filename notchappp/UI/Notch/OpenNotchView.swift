@@ -14,20 +14,25 @@ struct OpenNotchView: View {
                 .zIndex(1)
 
             ZStack {
-                switch notch.tab {
-                case .home:
-                    HomeView(namespace: namespace)
-                        .transition(.blurFade.combined(with: .offset(x: -24)))
-                case .reflect:
-                    ReflectView()
+                if notch.isDraggingFiles {
+                    DropZonesView()
                         .transition(.blurFade)
-                case .dev:
-                    DevView()
-                        .transition(.blurFade)
-                case .shelf:
-                    ShelfView()
-                        .staggeredAppear(0)
-                        .transition(.blurFade.combined(with: .offset(x: 24)))
+                } else {
+                    switch notch.tab {
+                    case .home:
+                        HomeView(namespace: namespace)
+                            .transition(.blurFade.combined(with: .offset(x: -24)))
+                    case .reflect:
+                        ReflectView()
+                            .transition(.blurFade)
+                    case .dev:
+                        ToolsView()
+                            .transition(.blurFade)
+                    case .shelf:
+                        ShelfView()
+                            .staggeredAppear(0)
+                            .transition(.blurFade.combined(with: .offset(x: 24)))
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
