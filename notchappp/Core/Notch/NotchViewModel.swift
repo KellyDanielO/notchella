@@ -115,6 +115,7 @@ final class NotchViewModel {
     private(set) var mouseLocation: CGPoint = .zero
 
     @ObservationIgnored var openSettings: () -> Void = {}
+    @ObservationIgnored var openBatteryReport: () -> Void = {}
     @ObservationIgnored var didClose: () -> Void = {}
     /// Keeps the notch open when the mouse leaves.
     @ObservationIgnored var isPinned = false

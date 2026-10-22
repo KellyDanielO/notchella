@@ -5,10 +5,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let model = AppModel()
     private var notchController: NotchWindowController?
     private var settingsWindow: NSWindow?
+    private var batteryReportWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         quitOtherInstances()
         model.notch.openSettings = { [weak self] in self?.showSettings() }
+        model.notch.openBatteryReport = { [weak self] in self?.showBatteryReport() }
         notchController = NotchWindowController(model: model)
         model.start()
         Analytics.start(settings: model.settings)
@@ -20,11 +22,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let tab = UserDefaults.standard.string(forKey: "NotchOpenTab").flatMap(NotchViewModel.Tab.init(rawValue:))
             model.notch.open(tab: tab)
         }
-        // `-NotchSimulate offline|online|lowBattery` shows that activity without the real event.
+        // `-NotchSimulate offline|online|lowBattery|batteryReport` shows that activity without the real event.
         switch UserDefaults.standard.string(forKey: "NotchSimulate") {
         case "offline": model.network.simulate(online: false)
         case "online": model.network.simulate(online: true)
         case "lowBattery": model.battery.simulateLowBattery()
+        case "batteryReport": showBatteryReport()
         default: break
         }
         #endif
@@ -68,5 +71,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.activate()
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    func showBatteryReport() {
+        model.notch.close()
+        Analytics.track("battery_report_opened")
+
+        // A fresh view each time so it measures again.
+        let controller = NSHostingController(rootView: BatteryReportView())
+        if let window = batteryReportWindow {
+            window.contentViewController = controller
+        } else {
+            let window = NSWindow(contentViewController: controller)
+            window.title = "Battery Report"
+            window.styleMask = [.titled, .closable, .fullSizeContentView]
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isMovableByWindowBackground = true
+            window.isReleasedWhenClosed = false
+            window.appearance = NSAppearance(named: .darkAqua)
+            window.setContentSize(NSSize(width: 400, height: 640))
+            window.center()
+            batteryReportWindow = window
+        }
+
+        NSApp.activate()
+        batteryReportWindow?.makeKeyAndOrderFront(nil)
     }
 }

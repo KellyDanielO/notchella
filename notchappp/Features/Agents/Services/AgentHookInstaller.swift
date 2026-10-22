@@ -6,15 +6,12 @@ import Foundation
 /// It prints nothing and always exits 0, so it can never block or change an agent's behavior.
 nonisolated enum AgentHookInstaller {
     enum InstallError: LocalizedError {
-        case unreadableSettings
-        case codexNotifyAlreadySet
+        case unreadableSettings(URL)
 
         var errorDescription: String? {
             switch self {
-            case .unreadableSettings:
-                "~/.claude/settings.json isn't valid JSON, so it was left untouched."
-            case .codexNotifyAlreadySet:
-                "~/.codex/config.toml already has a `notify` command. Add the notch hook to it by hand."
+            case .unreadableSettings(let url):
+                "\(url.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")) isn't valid JSON, so it was left untouched."
             }
         }
     }
@@ -23,6 +20,8 @@ nonisolated enum AgentHookInstaller {
 
     /// Claude Code events we listen to. `PreToolUse` gets a match-all matcher.
     private static let claudeEvents = ["SessionStart", "UserPromptSubmit", "PreToolUse", "Notification", "Stop", "SessionEnd"]
+    /// Codex uses the same hook format; `PermissionRequest` stands in for Claude's `Notification`.
+    private static let codexEvents = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest", "Stop", "SessionEnd"]
 
     static var supportDirectory: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -35,6 +34,7 @@ nonisolated enum AgentHookInstaller {
     private static var home: URL { FileManager.default.homeDirectoryForCurrentUser }
     private static var claudeSettingsURL: URL { home.appending(path: ".claude/settings.json") }
     private static var codexConfigURL: URL { home.appending(path: ".codex/config.toml") }
+    private static var codexHooksURL: URL { home.appending(path: ".codex/hooks.json") }
 
     // MARK: Status
 
@@ -43,7 +43,7 @@ nonisolated enum AgentHookInstaller {
     }
 
     static var isCodexInstalled: Bool {
-        (try? String(contentsOf: codexConfigURL, encoding: .utf8))?.contains(marker) ?? false
+        (try? String(contentsOf: codexHooksURL, encoding: .utf8))?.contains("\(marker)\\\" codex ") ?? false
     }
 
     // MARK: Script
@@ -81,30 +81,46 @@ nonisolated enum AgentHookInstaller {
     /// The original file is backed up next to it first.
     static func installClaude() throws {
         try installScript()
-        var settings = try readClaudeSettings()
+        try installHooks(agent: .claude, events: claudeEvents, in: claudeSettingsURL)
+    }
+
+    static func uninstallClaude() throws {
+        try uninstallHooks(in: claudeSettingsURL)
+    }
+
+    // MARK: Hooks JSON (shared by Claude Code and Codex)
+
+    /// Replaces any of our entries with one per event, keeping everything else.
+    private static func installHooks(agent: AgentKind, events: [String], in url: URL) throws {
+        var settings = try readSettings(url)
         var hooks = settings["hooks"] as? [String: Any] ?? [:]
 
-        for event in claudeEvents {
-            var groups = (hooks[event] as? [[String: Any]] ?? []).filter { !containsMarker($0) }
-            var group: [String: Any] = ["hooks": [["type": "command", "command": command(agent: .claude, event: event)]]]
-            if event == "PreToolUse" { group["matcher"] = "*" }
+        // Drop all of ours first, including any copied over under another agent's name.
+        for (event, value) in hooks {
+            let remaining = (value as? [[String: Any]] ?? []).filter { !containsMarker($0) }
+            hooks[event] = remaining.isEmpty ? nil : remaining
+        }
+        for event in events {
+            var groups = hooks[event] as? [[String: Any]] ?? []
+            var group: [String: Any] = ["hooks": [["type": "command", "command": command(agent: agent, event: event)]]]
+            if event == "PreToolUse" || event == "PermissionRequest" { group["matcher"] = "*" }
             groups.append(group)
             hooks[event] = groups
         }
 
         settings["hooks"] = hooks
-        try writeClaudeSettings(settings)
+        try writeSettings(settings, to: url)
     }
 
-    static func uninstallClaude() throws {
-        var settings = try readClaudeSettings()
+    private static func uninstallHooks(in url: URL) throws {
+        var settings = try readSettings(url)
         guard var hooks = settings["hooks"] as? [String: Any] else { return }
         for (event, value) in hooks {
             let remaining = (value as? [[String: Any]] ?? []).filter { !containsMarker($0) }
             hooks[event] = remaining.isEmpty ? nil : remaining
         }
         settings["hooks"] = hooks.isEmpty ? nil : hooks
-        try writeClaudeSettings(settings)
+        try writeSettings(settings, to: url)
     }
 
     private static func containsMarker(_ group: [String: Any]) -> Bool {
@@ -112,45 +128,58 @@ nonisolated enum AgentHookInstaller {
         return entries.contains { ($0["command"] as? String)?.contains(marker) ?? false }
     }
 
-    private static func readClaudeSettings() throws -> [String: Any] {
-        guard let data = try? Data(contentsOf: claudeSettingsURL), !data.isEmpty else { return [:] }
+    private static func readSettings(_ url: URL) throws -> [String: Any] {
+        guard let data = try? Data(contentsOf: url), !data.isEmpty else { return [:] }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw InstallError.unreadableSettings
+            throw InstallError.unreadableSettings(url)
         }
         return object
     }
 
-    private static func writeClaudeSettings(_ settings: [String: Any]) throws {
+    /// The original file is backed up next to it first.
+    private static func writeSettings(_ settings: [String: Any], to url: URL) throws {
         let fileManager = FileManager.default
-        try fileManager.createDirectory(at: claudeSettingsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: claudeSettingsURL.path) {
-            let backup = claudeSettingsURL.appendingPathExtension("notch-backup")
+        try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if fileManager.fileExists(atPath: url.path) {
+            let backup = url.appendingPathExtension("notch-backup")
             try? fileManager.removeItem(at: backup)
-            try fileManager.copyItem(at: claudeSettingsURL, to: backup)
+            try fileManager.copyItem(at: url, to: backup)
         }
         let data = try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .withoutEscapingSlashes])
-        try data.write(to: claudeSettingsURL, options: .atomic)
+        try data.write(to: url, options: .atomic)
     }
 
     // MARK: Codex
 
-    /// Codex calls a single `notify` program when a turn completes. Adds ours as a top-level key.
+    /// Registers lifecycle hooks in `~/.codex/hooks.json`, which report working / needs input / done.
+    /// Codex runs new hooks only after you review them in Codex. Until then, the `notify`
+    /// command in `config.toml` (called when a turn completes) still reports finished turns.
     static func installCodex() throws {
         try installScript()
+        try installHooks(agent: .codex, events: codexEvents, in: codexHooksURL)
+        try installCodexNotify()
+    }
+
+    static func uninstallCodex() throws {
+        try uninstallHooks(in: codexHooksURL)
+        guard let existing = try? String(contentsOf: codexConfigURL, encoding: .utf8) else { return }
+        // Only our own one-line `notify`; one wrapped by another tool spans lines and is left alone.
+        let kept = existing.split(separator: "\n", omittingEmptySubsequences: false).filter {
+            !($0.contains(marker) && $0.trimmingCharacters(in: .whitespaces).hasPrefix("notify"))
+        }
+        try kept.joined(separator: "\n").write(to: codexConfigURL, atomically: true, encoding: .utf8)
+    }
+
+    /// Adds ours as a top-level `notify` key, unless another one is already set.
+    private static func installCodexNotify() throws {
         let existing = (try? String(contentsOf: codexConfigURL, encoding: .utf8)) ?? ""
         guard !existing.contains(marker) else { return }
         if existing.split(separator: "\n").contains(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("notify") }) {
-            throw InstallError.codexNotifyAlreadySet
+            return
         }
         // Top-level TOML keys must come before any [table], so prepend.
         let line = "notify = [\"\(scriptURL.path)\", \"codex\", \"notify\"]\n"
         try FileManager.default.createDirectory(at: codexConfigURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try (line + existing).write(to: codexConfigURL, atomically: true, encoding: .utf8)
-    }
-
-    static func uninstallCodex() throws {
-        guard let existing = try? String(contentsOf: codexConfigURL, encoding: .utf8) else { return }
-        let kept = existing.split(separator: "\n", omittingEmptySubsequences: false).filter { !$0.contains(marker) }
-        try kept.joined(separator: "\n").write(to: codexConfigURL, atomically: true, encoding: .utf8)
     }
 }

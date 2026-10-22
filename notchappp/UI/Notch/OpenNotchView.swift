@@ -103,7 +103,8 @@ struct NotchHeaderView: View {
                         HeadphonesHeaderBadge()
                         UptimeBadge()
                         if battery.hasBattery {
-                            BatteryRing(size: 22)
+                            Button(action: notch.openBatteryReport) { BatteryRing(size: 22) }
+                                .buttonStyle(.plain)
                         }
                         NotchIconButton(symbol: "gearshape.fill", size: 11, tint: .white.opacity(0.6), action: notch.openSettings)
                     }

@@ -24,6 +24,9 @@ final class AgentMonitor {
     @ObservationIgnored private var scanTimer: Timer?
     @ObservationIgnored private var finishedTask: Task<Void, Never>?
     @ObservationIgnored private var processActivity: [Int32: Date] = [:]
+    /// Agents whose lifecycle hooks have actually fired. Codex skips hooks you haven't reviewed
+    /// in it yet, and `notify` alone only reports finished turns, so CPU stays in use until then.
+    @ObservationIgnored private var agentsReportingHooks: Set<AgentKind> = []
     @ObservationIgnored private var workStretchStart: Date?
     @ObservationIgnored private var lastWorkingDate: Date?
     @ObservationIgnored private var nudgesThisStretch = 0
@@ -122,6 +125,7 @@ final class AgentMonitor {
             )
             if let project { session.project = project }
             session.lastEvent = event.date
+            if event.name != "notify" { agentsReportingHooks.insert(event.agent) }
 
             switch event.name {
             case "SessionStart":
@@ -130,7 +134,7 @@ final class AgentMonitor {
                 if session.state != .working { session.stateSince = event.date }
                 session.state = .working
                 session.detail = event.toolName
-            case "Notification":
+            case "Notification", "PermissionRequest":
                 session.state = .needsInput
                 session.stateSince = event.date
                 session.detail = event.message
@@ -139,7 +143,10 @@ final class AgentMonitor {
                 session.state = .idle
                 session.stateSince = event.date
                 session.detail = nil
-                if wasWorking || event.name == "notify" { announceFinished(session) }
+                // Codex sends both `Stop` and `notify` for a turn once its hooks run; announce once.
+                if wasWorking || (event.name == "notify" && !agentsReportingHooks.contains(event.agent)) {
+                    announceFinished(session)
+                }
             case "SessionEnd":
                 withAnimation(.notchActivity) { sessions.removeAll { $0.id == id } }
                 continue
@@ -193,7 +200,7 @@ final class AgentMonitor {
     private func applyProcesses(_ processes: [AgentProcess]) {
         let now = Date()
         // Agents with hooks report precisely; don't second-guess them with CPU numbers.
-        let tracked = processes.filter { hooksInstalled[$0.kind] != true }
+        let tracked = processes.filter { hooksInstalled[$0.kind] != true || !agentsReportingHooks.contains($0.kind) }
 
         for process in tracked where process.cpuPercent >= Self.busyCPUThreshold {
             processActivity[process.pid] = now

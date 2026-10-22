@@ -34,6 +34,6 @@ struct BatteryRing: View {
         }
         .frame(width: size, height: size)
         .animation(.smooth, value: battery.level)
-        .help("Battery \(battery.level)%")
+        .help("Battery \(battery.level)% · Click for a battery report")
     }
 }

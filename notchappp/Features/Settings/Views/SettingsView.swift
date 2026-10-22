@@ -116,7 +116,7 @@ struct SettingsView: View {
             } header: {
                 Text("Agents & Sleep")
             } footer: {
-                Text("Hooks report exactly when an agent is working, waiting for you, or done. Without them, Notch guesses from the agent's CPU use. Keep-awake stops idle sleep only: closing the lid still sleeps the Mac unless it's plugged in with an external display.")
+                Text("Hooks report exactly when an agent is working, waiting for you, or done. Without them, Notch guesses from the agent's CPU use. Codex runs new hooks only after you review them in Codex. Keep-awake stops idle sleep only: closing the lid still sleeps the Mac unless it's plugged in with an external display.")
                     .foregroundStyle(.secondary)
             }
 
